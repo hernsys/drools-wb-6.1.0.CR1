@@ -130,7 +130,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
                       final Metadata metadata,
                       final String comment ) {
         try {
-        	System.out.println("************Hernsys DSLTextEditorServiceImpl save");
+        	System.out.println("**Hernsys preSave .dsl");
             ioService.write( Paths.convert( resource ),
                              content,
                              metadataService.setUpAttributes( resource,
@@ -139,10 +139,11 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
 
             //Invalidate Package-level DMO cache as a DSL has been altered
             invalidateDMOPackageCache.fire( new InvalidateDMOPackageCacheEvent( resource ) );
-
+            System.out.println("**Hernsys posSave .dsl");
             return resource;
 
         } catch ( Exception e ) {
+        	System.out.println("**Hernsys onErrorSave .dsl");
             throw ExceptionUtilities.handleException( e );
         }
     }

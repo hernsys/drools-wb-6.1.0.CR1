@@ -21,12 +21,14 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
 import javax.inject.Named;
 
 import com.google.common.base.Charsets;
+
 import org.drools.workbench.models.datamodel.oracle.PackageDataModelOracle;
 import org.drools.workbench.models.datamodel.workitems.PortableWorkDefinition;
 import org.drools.workbench.models.guided.dtable.backend.GuidedDTXMLPersistence;
@@ -214,6 +216,7 @@ public class GuidedDecisionTableEditorServiceImpl implements GuidedDecisionTable
                       final Metadata metadata,
                       final String comment ) {
         try {
+        	System.out.println("**Hernsys preSave .gdst");
             final Package pkg = projectService.resolvePackage( resource );
             final String packageName = ( pkg == null ? null : pkg.getPackageName() );
             model.setPackageName( packageName );
@@ -223,10 +226,11 @@ public class GuidedDecisionTableEditorServiceImpl implements GuidedDecisionTable
                              metadataService.setUpAttributes( resource,
                                                               metadata ),
                              makeCommentedOption( comment ) );
-
+            System.out.println("**Hernsys posSave .gdst");
             return resource;
 
         } catch ( Exception e ) {
+        	System.out.println("**Hernsys onErrorSave .gdst");
             throw ExceptionUtilities.handleException( e );
         }
     }

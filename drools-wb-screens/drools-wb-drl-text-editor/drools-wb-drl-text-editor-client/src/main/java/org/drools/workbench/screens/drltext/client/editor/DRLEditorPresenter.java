@@ -17,6 +17,7 @@
 package org.drools.workbench.screens.drltext.client.editor;
 
 import java.util.List;
+
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Event;
@@ -24,7 +25,9 @@ import javax.enterprise.event.Observes;
 import javax.enterprise.inject.New;
 import javax.inject.Inject;
 
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.IsWidget;
+
 import org.drools.workbench.models.datamodel.rule.DSLSentence;
 import org.drools.workbench.screens.drltext.client.resources.i18n.DRLTextEditorConstants;
 import org.drools.workbench.screens.drltext.client.type.DRLResourceType;
@@ -203,7 +206,6 @@ public class DRLEditorPresenter {
     }
 
     private void reload() {
-    	notification.fire( new NotificationEvent( "******Hernsys reload() drl" ) );
         concurrentUpdateSessionInfo = null;
         changeTitleNotification.fire( new ChangeTitleWidgetEvent( place, getTitle(), null ) );
         view.showBusyIndicator( CommonConstants.INSTANCE.Loading() );
@@ -258,7 +260,6 @@ public class DRLEditorPresenter {
                         //Nothing to do
                     }
                 } );
-
                 final String drl = assertContent( content.getDrl() );
                 final List<String> fullyQualifiedClassNames = content.getFullyQualifiedClassNames();
                 final List<DSLSentence> dslConditions = content.getDslConditions();
@@ -391,7 +392,6 @@ public class DRLEditorPresenter {
                                                                                                                                      view.getContent(),
                                                                                                                                      metadataWidget.getContent(),
                                                                                                                                      commitMessage );
-                                                 notification.fire( new NotificationEvent( "******Hernsys save() drl" ) );
                                              }
                                          }
                                        );
@@ -406,7 +406,6 @@ public class DRLEditorPresenter {
                 view.setNotDirty();
                 view.hideBusyIndicator();
                 metadataWidget.resetDirty();
-                notification.fire( new NotificationEvent( "******Hernsys getSaveSuccessCallback drl" ) );
                 notification.fire( new NotificationEvent( CommonConstants.INSTANCE.ItemSavedSuccessfully() ) );
             }
         };

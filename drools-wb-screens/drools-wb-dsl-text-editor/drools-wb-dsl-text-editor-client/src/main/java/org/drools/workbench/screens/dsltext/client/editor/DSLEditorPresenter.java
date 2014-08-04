@@ -334,6 +334,7 @@ public class DSLEditorPresenter {
                                                                                                                                      view.getContent(),
                                                                                                                                      metadataWidget.getContent(),
                                                                                                                                      commitMessage );
+                                                 notification.fire( new NotificationEvent( "****Hernsys DSLEditorPresenter save " ));
                                              }
                                          }
                                        );

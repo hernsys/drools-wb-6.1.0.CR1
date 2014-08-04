@@ -201,16 +201,17 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
         try {
             final String drl = assertPackageName( content,
                                                   resource );
-            System.out.println("************Hernsys DRLTextEditorServiceImpl save");
+            System.out.println("**Hernsys preSave .drl");
             ioService.write( Paths.convert( resource ),
                              drl,
                              metadataService.setUpAttributes( resource,
                                                               metadata ),
                              makeCommentedOption( comment ) );
-
+            System.out.println("**Hernsys posSave .drl");
             return resource;
 
         } catch ( Exception e ) {
+        	System.out.println("**Hernsys onErrorSave .drl");
             throw ExceptionUtilities.handleException( e );
         }
     }
