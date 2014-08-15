@@ -11,3 +11,4 @@
 
 # Noise coming from JackRabbit into the working directory
 derby.log
+/bin

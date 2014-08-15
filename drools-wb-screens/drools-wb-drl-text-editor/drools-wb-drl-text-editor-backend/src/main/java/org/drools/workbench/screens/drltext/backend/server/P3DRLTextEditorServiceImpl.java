@@ -20,12 +20,13 @@ import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
+import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import com.google.common.base.Charsets;
 import org.drools.workbench.models.commons.backend.packages.PackageNameParser;
 import org.drools.workbench.models.commons.backend.packages.PackageNameWriter;
 import org.drools.workbench.models.datamodel.oracle.PackageDataModelOracle;
@@ -64,9 +65,12 @@ import org.uberfire.rpc.SessionInfo;
 import org.uberfire.security.Identity;
 import org.uberfire.workbench.events.ResourceOpenedEvent;
 
+import com.google.common.base.Charsets;
+
 @Service
 @ApplicationScoped
-public class DRLTextEditorServiceImpl implements DRLTextEditorService {
+@Alternative
+public class P3DRLTextEditorServiceImpl implements DRLTextEditorService {
 
     //Filters to include *all* applicable resources
     private static final JavaFileFilter FILTER_JAVA = new JavaFileFilter();
@@ -201,17 +205,17 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
         try {
             final String drl = assertPackageName( content,
                                                   resource );
-            System.out.println("**///Hernsys preSave .drl");
+            System.out.println("**ALternativeeeeeeeeeeeeeeeee  Hernsys preSave .drl");
             ioService.write( Paths.convert( resource ),
                              drl,
                              metadataService.setUpAttributes( resource,
                                                               metadata ),
                              makeCommentedOption( comment ) );
-            System.out.println("**///Hernsys posSave .drl");
+            System.out.println("**ALternativeeeeeeeeeeeeeeeee Hernsys posSave .drl");
             return resource;
 
         } catch ( Exception e ) {
-        	System.out.println("**///Hernsys onErrorSave .drl");
+        	System.out.println("**ALternativeeeeeeeeeeeeeeeee  Hernsys onErrorSave .drl");
             throw ExceptionUtilities.handleException( e );
         }
     }

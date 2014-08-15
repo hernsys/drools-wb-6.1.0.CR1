@@ -17,11 +17,9 @@
 package org.drools.workbench.screens.guided.dtable.client.editor;
 
 import java.util.Set;
+
 import javax.inject.Inject;
 
-import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.SimplePanel;
 import org.drools.workbench.models.datamodel.workitems.PortableWorkDefinition;
 import org.drools.workbench.models.guided.dtable.shared.model.GuidedDecisionTable52;
 import org.drools.workbench.screens.guided.dtable.client.widget.GuidedDecisionTableWidget;
@@ -32,6 +30,10 @@ import org.kie.workbench.common.widgets.client.resources.i18n.CommonConstants;
 import org.uberfire.backend.vfs.Path;
 import org.uberfire.client.common.BusyPopup;
 import org.uberfire.security.Identity;
+
+import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.SimplePanel;
 
 /**
  * Guided Decision Table Editor View implementation
@@ -101,5 +103,7 @@ public class GuidedDecisionTableEditorViewImpl extends Composite implements Guid
     public void hideBusyIndicator() {
         BusyPopup.close();
     }
+    
+    
 
 }

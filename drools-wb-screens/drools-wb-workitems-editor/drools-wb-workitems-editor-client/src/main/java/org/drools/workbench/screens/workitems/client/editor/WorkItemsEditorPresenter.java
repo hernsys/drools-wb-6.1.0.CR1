@@ -16,14 +16,18 @@
 
 package org.drools.workbench.screens.workitems.client.editor;
 
+import static org.uberfire.client.common.ConcurrentChangePopup.newConcurrentDelete;
+import static org.uberfire.client.common.ConcurrentChangePopup.newConcurrentRename;
+import static org.uberfire.client.common.ConcurrentChangePopup.newConcurrentUpdate;
+
 import java.util.List;
+
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.New;
 import javax.inject.Inject;
 
-import com.google.gwt.user.client.ui.IsWidget;
 import org.drools.workbench.screens.workitems.client.resources.i18n.WorkItemsEditorConstants;
 import org.drools.workbench.screens.workitems.client.type.WorkItemsResourceType;
 import org.drools.workbench.screens.workitems.model.WorkItemsModelContent;
@@ -54,6 +58,7 @@ import org.uberfire.client.annotations.WorkbenchPartView;
 import org.uberfire.client.common.MultiPageEditor;
 import org.uberfire.client.common.Page;
 import org.uberfire.client.mvp.PlaceManager;
+import org.uberfire.client.workbench.events.BeforeClosePlaceEvent;
 import org.uberfire.client.workbench.events.ChangeTitleWidgetEvent;
 import org.uberfire.lifecycle.IsDirty;
 import org.uberfire.lifecycle.OnClose;
@@ -67,7 +72,8 @@ import org.uberfire.workbench.events.NotificationEvent;
 import org.uberfire.workbench.model.menu.Menus;
 import org.uberfire.workbench.type.FileNameUtil;
 
-import static org.uberfire.client.common.ConcurrentChangePopup.*;
+import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.user.client.ui.IsWidget;
 
 /**
  * Editor for Work Item definitions
@@ -116,10 +122,18 @@ public class WorkItemsEditorPresenter {
     private boolean isReadOnly;
     private String version;
     private ObservablePath.OnConcurrentUpdateEvent concurrentUpdateSessionInfo = null;
+    
+    @Inject
+	private Event<BeforeClosePlaceEvent> closePlaceEvent;
 
     @OnStartup
     public void onStartup( final ObservablePath path,
                            final PlaceRequest place ) {
+    	// JSNI
+    	final JavaScriptObject window = getCurrentWindow();
+    	registerHandlers(WorkItemsEditorPresenter.this, window);
+    	
+    	
         this.path = path;
         this.place = place;
         this.isReadOnly = place.getParameter( "readOnly", null ) == null ? false : true;
@@ -406,5 +420,32 @@ public class WorkItemsEditorPresenter {
             notification.fire( new NotificationEvent( CommonConstants.INSTANCE.ItemRestored() ) );
         }
     }
+    
+    public void close() {
+		closePlaceEvent.fire(new BeforeClosePlaceEvent(this.place, true));
+	}
+
+	
+
+	//JSNI
+	native JavaScriptObject openWindow(String url) /*-{
+		return $wnd.open(url, 'blank');
+	}-*/;
+
+	native JavaScriptObject getCurrentWindow() /*-{
+		return $wnd;
+	}-*/;
+
+	native JavaScriptObject registerHandlers(WorkItemsEditorPresenter jsni,
+		JavaScriptObject window) /*-{
+		window.onbeforeunload = doOnbeforeunload;
+		function doOnbeforeunload() {
+			jsni.@org.drools.workbench.screens.workitems.client.editor.WorkItemsEditorPresenter::onWindowClosed()();
+		}
+	}-*/;
+
+	private void onWindowClosed() {
+		close();
+	}
 
 }

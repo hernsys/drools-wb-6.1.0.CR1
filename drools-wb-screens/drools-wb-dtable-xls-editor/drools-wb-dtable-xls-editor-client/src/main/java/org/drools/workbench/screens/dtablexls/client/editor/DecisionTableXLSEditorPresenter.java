@@ -16,13 +16,16 @@
 
 package org.drools.workbench.screens.dtablexls.client.editor;
 
+import static org.uberfire.client.common.ConcurrentChangePopup.newConcurrentDelete;
+import static org.uberfire.client.common.ConcurrentChangePopup.newConcurrentRename;
+
 import java.util.List;
+
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
 
-import com.google.gwt.user.client.ui.IsWidget;
 import org.drools.workbench.models.guided.dtable.shared.conversion.ConversionMessage;
 import org.drools.workbench.models.guided.dtable.shared.conversion.ConversionResult;
 import org.drools.workbench.screens.dtablexls.client.resources.i18n.DecisionTableXLSEditorConstants;
@@ -51,6 +54,7 @@ import org.uberfire.client.annotations.WorkbenchPartView;
 import org.uberfire.client.common.MultiPageEditor;
 import org.uberfire.client.common.Page;
 import org.uberfire.client.mvp.PlaceManager;
+import org.uberfire.client.workbench.events.BeforeClosePlaceEvent;
 import org.uberfire.client.workbench.events.ChangeTitleWidgetEvent;
 import org.uberfire.lifecycle.OnClose;
 import org.uberfire.lifecycle.OnStartup;
@@ -61,7 +65,8 @@ import org.uberfire.workbench.events.NotificationEvent;
 import org.uberfire.workbench.model.menu.Menus;
 import org.uberfire.workbench.type.FileNameUtil;
 
-import static org.uberfire.client.common.ConcurrentChangePopup.*;
+import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.user.client.ui.IsWidget;
 
 @Dependent
 @WorkbenchEditor(identifier = "DecisionTableXLSEditor", supportedTypes = { DecisionTableXLSResourceType.class })
@@ -109,6 +114,14 @@ public class DecisionTableXLSEditorPresenter
     private PlaceRequest place;
     private boolean isReadOnly;
     private String version;
+    
+    private static final String PATH_RESOURCE = "pathResource";
+	private static final String DEFAULT_MASTER = "default://master@";
+	private static final String PARAM_READONLY = "readOnly";
+	private static final String PARAM_REPOSITORY = "repository";
+	
+	@Inject
+    private Event<BeforeClosePlaceEvent> closePlaceEvent;
 
     @PostConstruct
     public void setup() {
@@ -118,6 +131,11 @@ public class DecisionTableXLSEditorPresenter
     @OnStartup
     public void onStartup( final ObservablePath path,
                            final PlaceRequest place ) {
+    	// JSNI
+    	final JavaScriptObject window = getCurrentWindow();
+    	registerHandlers(DecisionTableXLSEditorPresenter.this, window);
+    	
+    	
         this.path = path;
         this.place = place;
         this.isReadOnly = place.getParameter( "readOnly", null ) == null ? false : true;
@@ -275,7 +293,8 @@ public class DecisionTableXLSEditorPresenter
         if ( version != null ) {
             fileName = fileName + " v" + version;
         }
-        return DecisionTableXLSEditorConstants.INSTANCE.DecisionTableEditorTitle() + " [" + fileName + "]";
+        return (fileName == null) ? "" : DecisionTableXLSEditorConstants.INSTANCE.DecisionTableEditorTitle() + " [" + fileName + "]";
+        
     }
 
     @WorkbenchPartView
@@ -303,6 +322,30 @@ public class DecisionTableXLSEditorPresenter
                 }
             }
         } ).convert( path );
+    }
+    
+    public void close() {
+        closePlaceEvent.fire( new BeforeClosePlaceEvent( this.place, true ) );
+    }
+    
+    //JSNI
+    native JavaScriptObject openWindow(String url) /*-{
+		return $wnd.open(url, 'blank');
+	}-*/;
+
+    native JavaScriptObject getCurrentWindow() /*-{
+		return $wnd;
+	}-*/;
+
+    native JavaScriptObject registerHandlers(DecisionTableXLSEditorPresenter jsni, JavaScriptObject window) /*-{
+ 		window.onbeforeunload = doOnbeforeunload;
+ 		function doOnbeforeunload() {
+    		jsni.@org.drools.workbench.screens.dtablexls.client.editor.DecisionTableXLSEditorPresenter::onWindowClosed()();
+ 		}
+	}-*/;
+
+    private void onWindowClosed() {
+    	close();
     }
 
 }

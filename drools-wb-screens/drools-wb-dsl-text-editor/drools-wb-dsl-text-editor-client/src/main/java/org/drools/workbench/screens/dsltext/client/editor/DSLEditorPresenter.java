@@ -16,14 +16,18 @@
 
 package org.drools.workbench.screens.dsltext.client.editor;
 
+import static org.uberfire.client.common.ConcurrentChangePopup.newConcurrentDelete;
+import static org.uberfire.client.common.ConcurrentChangePopup.newConcurrentRename;
+import static org.uberfire.client.common.ConcurrentChangePopup.newConcurrentUpdate;
+
 import java.util.List;
+
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.New;
 import javax.inject.Inject;
 
-import com.google.gwt.user.client.ui.IsWidget;
 import org.drools.workbench.screens.dsltext.client.resources.i18n.DSLTextEditorConstants;
 import org.drools.workbench.screens.dsltext.client.type.DSLResourceType;
 import org.drools.workbench.screens.dsltext.service.DSLTextEditorService;
@@ -53,6 +57,7 @@ import org.uberfire.client.annotations.WorkbenchPartView;
 import org.uberfire.client.common.MultiPageEditor;
 import org.uberfire.client.common.Page;
 import org.uberfire.client.mvp.PlaceManager;
+import org.uberfire.client.workbench.events.BeforeClosePlaceEvent;
 import org.uberfire.client.workbench.events.ChangeTitleWidgetEvent;
 import org.uberfire.lifecycle.IsDirty;
 import org.uberfire.lifecycle.OnClose;
@@ -66,7 +71,8 @@ import org.uberfire.workbench.events.NotificationEvent;
 import org.uberfire.workbench.model.menu.Menus;
 import org.uberfire.workbench.type.FileNameUtil;
 
-import static org.uberfire.client.common.ConcurrentChangePopup.*;
+import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.user.client.ui.IsWidget;
 
 /**
  * DSL Editor Presenter.
@@ -115,10 +121,22 @@ public class DSLEditorPresenter {
     private boolean isReadOnly;
     private String version;
     private ObservablePath.OnConcurrentUpdateEvent concurrentUpdateSessionInfo = null;
+    
+    private static final String PATH_RESOURCE = "pathResource";
+	private static final String DEFAULT_MASTER = "default://master@";
+	private static final String PARAM_READONLY = "readOnly";
+	private static final String PARAM_REPOSITORY = "repository";
+	
+	@Inject
+    private Event<BeforeClosePlaceEvent> closePlaceEvent;
 
     @OnStartup
     public void onStartup( final ObservablePath path,
                            final PlaceRequest place ) {
+    	// JSNI
+    	final JavaScriptObject window = getCurrentWindow();
+    	registerHandlers(DSLEditorPresenter.this, window);
+    	
         this.path = path;
         this.place = place;
         this.isReadOnly = place.getParameter( "readOnly", null ) == null ? false : true;
@@ -334,7 +352,6 @@ public class DSLEditorPresenter {
                                                                                                                                      view.getContent(),
                                                                                                                                      metadataWidget.getContent(),
                                                                                                                                      commitMessage );
-                                                 notification.fire( new NotificationEvent( "****Hernsys DSLEditorPresenter save " ));
                                              }
                                          }
                                        );
@@ -380,7 +397,7 @@ public class DSLEditorPresenter {
         if ( version != null ) {
             fileName = fileName + " v" + version;
         }
-        return DSLTextEditorConstants.INSTANCE.DslEditorTitle() + " [" + fileName + "]";
+        return (fileName == null) ? "" : DSLTextEditorConstants.INSTANCE.DslEditorTitle() + " [" + fileName + "]";
     }
 
     @WorkbenchPartView
@@ -402,5 +419,31 @@ public class DSLEditorPresenter {
             notification.fire( new NotificationEvent( CommonConstants.INSTANCE.ItemRestored() ) );
         }
     }
+    
+    public void close() {
+        closePlaceEvent.fire( new BeforeClosePlaceEvent( this.place ) );
+    }
+    
+    //JSNI
+  	native JavaScriptObject openWindow(String url) /*-{
+  		return $wnd.open(url, 'blank');
+  	}-*/;
+
+  	native JavaScriptObject getCurrentWindow() /*-{
+  		return $wnd;
+  	}-*/;
+
+  	native JavaScriptObject registerHandlers(DSLEditorPresenter jsni,
+  		JavaScriptObject window) /*-{
+  		window.onbeforeunload = doOnbeforeunload;
+  		function doOnbeforeunload() {
+  			jsni.@org.drools.workbench.screens.dsltext.client.editor.DSLEditorPresenter::onWindowClosed()();
+  		}
+  	}-*/;
+
+  	private void onWindowClosed() {
+  		close();
+  	}
+    
 
 }

@@ -16,14 +16,18 @@
 
 package org.drools.workbench.screens.guided.dtable.client.editor;
 
+import static org.uberfire.client.common.ConcurrentChangePopup.newConcurrentDelete;
+import static org.uberfire.client.common.ConcurrentChangePopup.newConcurrentRename;
+import static org.uberfire.client.common.ConcurrentChangePopup.newConcurrentUpdate;
+
 import java.util.List;
+
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.New;
 import javax.inject.Inject;
 
-import com.google.gwt.user.client.ui.IsWidget;
 import org.drools.workbench.models.guided.dtable.shared.model.GuidedDecisionTable52;
 import org.drools.workbench.screens.guided.dtable.client.resources.i18n.GuidedDecisionTableConstants;
 import org.drools.workbench.screens.guided.dtable.client.type.GuidedDTableResourceType;
@@ -62,11 +66,13 @@ import org.uberfire.client.annotations.WorkbenchPartView;
 import org.uberfire.client.common.MultiPageEditor;
 import org.uberfire.client.common.Page;
 import org.uberfire.client.mvp.PlaceManager;
+import org.uberfire.client.workbench.events.BeforeClosePlaceEvent;
 import org.uberfire.client.workbench.events.ChangeTitleWidgetEvent;
 import org.uberfire.lifecycle.IsDirty;
 import org.uberfire.lifecycle.OnClose;
 import org.uberfire.lifecycle.OnMayClose;
 import org.uberfire.lifecycle.OnSave;
+import org.uberfire.lifecycle.OnShutdown;
 import org.uberfire.lifecycle.OnStartup;
 import org.uberfire.mvp.Command;
 import org.uberfire.mvp.ParameterizedCommand;
@@ -75,7 +81,10 @@ import org.uberfire.workbench.events.NotificationEvent;
 import org.uberfire.workbench.model.menu.Menus;
 import org.uberfire.workbench.type.FileNameUtil;
 
-import static org.uberfire.client.common.ConcurrentChangePopup.*;
+import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.user.client.ui.IsWidget;
+
+
 
 /**
  * Guided Decision Table Editor Presenter
@@ -140,15 +149,31 @@ public class GuidedDecisionTableEditorPresenter {
 
     @Inject
     private MetadataWidget metadataWidget;
-
+    
+    @Inject
+    private Event<BeforeClosePlaceEvent> closePlaceEvent;
+    
+    private static final String PATH_RESOURCE = "pathResource";
+	private static final String DEFAULT_MASTER = "default://master@";
+	private static final String PARAM_READONLY = "readOnly";
+	private static final String PARAM_REPOSITORY = "repository";
+    
     @OnStartup
     public void onStartup( final ObservablePath path,
                            final PlaceRequest place ) {
-        this.path = path;
+    	
+    	
+		// JSNI
+		final JavaScriptObject window = getCurrentWindow();
+		registerHandlers(GuidedDecisionTableEditorPresenter.this, window);
+    	
+    	
+    	this.path = path;
         this.place = place;
         this.isReadOnly = place.getParameter( "readOnly", null ) == null ? false : true;
         this.version = place.getParameter( "version", null );
-
+        
+        
         this.path.onRename( new Command() {
             @Override
             public void execute() {
@@ -213,7 +238,13 @@ public class GuidedDecisionTableEditorPresenter {
         view.showBusyIndicator( CommonConstants.INSTANCE.Loading() );
 
         loadContent();
+        
     }
+    
+    @OnShutdown
+    public void onShutdown(){
+    	//Window.alert("onShutdown()");
+    } 
 
     private void reload() {
         concurrentUpdateSessionInfo = null;
@@ -281,6 +312,7 @@ public class GuidedDecisionTableEditorPresenter {
                                                                                isReadOnly ),
                                                   new HasBusyIndicatorDefaultErrorCallback( metadataWidget )
                                                 ).getMetadata( path );
+                            
                         }
                     }
 
@@ -427,7 +459,7 @@ public class GuidedDecisionTableEditorPresenter {
         this.oracleFactory.destroy( oracle );
     }
 
-    @OnMayClose
+    @OnMayClose	
     public boolean checkIfDirty() {
         if ( isDirty() ) {
             return view.confirmClose();
@@ -442,7 +474,8 @@ public class GuidedDecisionTableEditorPresenter {
         if ( version != null ) {
             fileName = fileName + " v" + version;
         }
-        return GuidedDecisionTableConstants.INSTANCE.GuidedDecisionTableEditorTitle() + " [" + fileName + "]";
+        return (fileName == null) ? "" : GuidedDecisionTableConstants.INSTANCE.GuidedDecisionTableEditorTitle() + "[" + fileName + "]"; 
+        
     }
 
     @WorkbenchPartView
@@ -464,5 +497,31 @@ public class GuidedDecisionTableEditorPresenter {
             notification.fire( new NotificationEvent( CommonConstants.INSTANCE.ItemRestored() ) );
         }
     }
+    
+    public void close() {
+        closePlaceEvent.fire( new BeforeClosePlaceEvent( this.place, true ) );
+    }
+    
+    //JSNI
+    native JavaScriptObject openWindow(String url) /*-{
+		return $wnd.open(url, 'blank');
+	}-*/;
+
+    native JavaScriptObject getCurrentWindow() /*-{
+		return $wnd;
+	}-*/;
+
+    native JavaScriptObject registerHandlers(GuidedDecisionTableEditorPresenter jsni, JavaScriptObject window) /*-{
+ 		window.onbeforeunload = doOnbeforeunload;
+ 		function doOnbeforeunload() {
+    		jsni.@org.drools.workbench.screens.guided.dtable.client.editor.GuidedDecisionTableEditorPresenter::onWindowClosed()();
+ 		}
+	}-*/;
+
+    private void onWindowClosed() {
+    	close();
+    }
+    
+    
 
 }
