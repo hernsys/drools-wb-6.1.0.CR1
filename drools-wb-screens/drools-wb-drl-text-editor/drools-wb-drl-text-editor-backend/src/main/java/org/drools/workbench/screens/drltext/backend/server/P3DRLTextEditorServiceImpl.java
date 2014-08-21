@@ -69,7 +69,6 @@ import com.google.common.base.Charsets;
 
 @Service
 @ApplicationScoped
-@Alternative
 public class P3DRLTextEditorServiceImpl implements DRLTextEditorService {
 
     //Filters to include *all* applicable resources
@@ -127,6 +126,7 @@ public class P3DRLTextEditorServiceImpl implements DRLTextEditorService {
                         final String content,
                         final String comment ) {
         try {
+        	System.out.println("**alternative create .drl");
             final String drl = assertPackageName( content,
                                                   context );
 
@@ -151,6 +151,7 @@ public class P3DRLTextEditorServiceImpl implements DRLTextEditorService {
     @Override
     public String load( final Path path ) {
         try {
+        	System.out.println("**alternative load .drl");
             final String content = ioService.readAllString( Paths.convert( path ) );
 
             return content;
@@ -205,17 +206,17 @@ public class P3DRLTextEditorServiceImpl implements DRLTextEditorService {
         try {
             final String drl = assertPackageName( content,
                                                   resource );
-            System.out.println("**ALternativeeeeeeeeeeeeeeeee  Hernsys preSave .drl");
+            System.out.println("**alternative preSave .drl");
             ioService.write( Paths.convert( resource ),
                              drl,
                              metadataService.setUpAttributes( resource,
                                                               metadata ),
                              makeCommentedOption( comment ) );
-            System.out.println("**ALternativeeeeeeeeeeeeeeeee Hernsys posSave .drl");
+            System.out.println("**alternative posSave .drl");
             return resource;
 
         } catch ( Exception e ) {
-        	System.out.println("**ALternativeeeeeeeeeeeeeeeee  Hernsys onErrorSave .drl");
+        	System.out.println("**alternative onErrorSave .drl");
             throw ExceptionUtilities.handleException( e );
         }
     }
@@ -224,6 +225,7 @@ public class P3DRLTextEditorServiceImpl implements DRLTextEditorService {
     public void delete( final Path path,
                         final String comment ) {
         try {
+        	System.out.println("**alternative delete .drl");
             deleteService.delete( path,
                                   comment );
 
@@ -237,6 +239,7 @@ public class P3DRLTextEditorServiceImpl implements DRLTextEditorService {
                         final String newName,
                         final String comment ) {
         try {
+        	System.out.println("**alternative rename .drl");
             return renameService.rename( path,
                                          newName,
                                          comment );
@@ -251,6 +254,7 @@ public class P3DRLTextEditorServiceImpl implements DRLTextEditorService {
                       final String newName,
                       final String comment ) {
         try {
+        	System.out.println("**alternative copy .drl");
             return copyService.copy( path,
                                      newName,
                                      comment );
@@ -264,6 +268,7 @@ public class P3DRLTextEditorServiceImpl implements DRLTextEditorService {
     public List<ValidationMessage> validate( final Path path,
                                              final String content ) {
         try {
+        	System.out.println("**alternative validate .drl");
             return genericValidator.validate( path,
                                               new ByteArrayInputStream( content.getBytes( Charsets.UTF_8 ) ),
                                               FILTER_JAVA,

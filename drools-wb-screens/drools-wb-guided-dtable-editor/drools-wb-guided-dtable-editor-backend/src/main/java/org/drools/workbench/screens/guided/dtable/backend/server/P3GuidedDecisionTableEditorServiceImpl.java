@@ -14,30 +14,28 @@
  * limitations under the License.
  */
 
-package org.drools.workbench.screens.drltext.backend.server;
+package org.drools.workbench.screens.guided.dtable.backend.server;
 
 import java.io.ByteArrayInputStream;
-import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
-import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 import javax.inject.Named;
 
 import com.google.common.base.Charsets;
 
-import org.drools.workbench.models.commons.backend.packages.PackageNameParser;
-import org.drools.workbench.models.commons.backend.packages.PackageNameWriter;
 import org.drools.workbench.models.datamodel.oracle.PackageDataModelOracle;
-import org.drools.workbench.models.datamodel.packages.HasPackageName;
-import org.drools.workbench.models.datamodel.rule.DSLSentence;
-import org.drools.workbench.screens.drltext.model.DrlModelContent;
-import org.drools.workbench.screens.drltext.service.DRLTextEditorService;
-import org.drools.workbench.screens.drltext.type.DRLResourceTypeDefinition;
-import org.drools.workbench.screens.drltext.type.DSLRResourceTypeDefinition;
+import org.drools.workbench.models.datamodel.workitems.PortableWorkDefinition;
+import org.drools.workbench.models.guided.dtable.backend.GuidedDTXMLPersistence;
+import org.drools.workbench.models.guided.dtable.shared.model.GuidedDecisionTable52;
+import org.drools.workbench.screens.guided.dtable.model.GuidedDecisionTableEditorContent;
+import org.drools.workbench.screens.guided.dtable.service.GuidedDecisionTableEditorService;
+import org.drools.workbench.screens.workitems.service.WorkItemsEditorService;
 import org.guvnor.common.services.backend.exceptions.ExceptionUtilities;
 import org.guvnor.common.services.backend.file.JavaFileFilter;
 import org.guvnor.common.services.backend.validation.GenericValidator;
@@ -56,8 +54,10 @@ import org.kie.workbench.common.services.backend.file.DSLRFileFilter;
 import org.kie.workbench.common.services.backend.file.GlobalsFileFilter;
 import org.kie.workbench.common.services.backend.file.RDRLFileFilter;
 import org.kie.workbench.common.services.backend.file.RDSLRFileFilter;
+import org.kie.workbench.common.services.backend.source.SourceServices;
 import org.kie.workbench.common.services.datamodel.backend.server.DataModelOracleUtilities;
 import org.kie.workbench.common.services.datamodel.backend.server.service.DataModelService;
+import org.kie.workbench.common.services.datamodel.model.PackageDataModelOracleBaselinePayload;
 import org.uberfire.backend.server.util.Paths;
 import org.uberfire.backend.vfs.Path;
 import org.uberfire.io.IOService;
@@ -69,8 +69,7 @@ import org.uberfire.workbench.events.ResourceOpenedEvent;
 
 @Service
 @ApplicationScoped
-@Alternative
-public class DRLTextEditorServiceImpl implements DRLTextEditorService {
+public class P3GuidedDecisionTableEditorServiceImpl implements GuidedDecisionTableEditorService {
 
     //Filters to include *all* applicable resources
     private static final JavaFileFilter FILTER_JAVA = new JavaFileFilter();
@@ -110,25 +109,27 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
     private DataModelService dataModelService;
 
     @Inject
+    private SourceServices sourceServices;
+
+    @Inject
+    private WorkItemsEditorService workItemsService;
+
+    @Inject
     private ProjectService projectService;
 
     @Inject
     private GenericValidator genericValidator;
 
-    @Inject
-    private DRLResourceTypeDefinition drlResourceType;
-
-    @Inject
-    private DSLRResourceTypeDefinition dslrResourceType;
-
     @Override
     public Path create( final Path context,
                         final String fileName,
-                        final String content,
+                        final GuidedDecisionTable52 content,
                         final String comment ) {
         try {
-            final String drl = assertPackageName( content,
-                                                  context );
+        	System.out.println("**alternative create .gdst");
+            final Package pkg = projectService.resolvePackage( context );
+            final String packageName = ( pkg == null ? null : pkg.getPackageName() );
+            content.setPackageName( packageName );
 
             final org.uberfire.java.nio.file.Path nioPath = Paths.convert( context ).resolve( fileName );
             final Path newPath = Paths.convert( nioPath );
@@ -138,7 +139,7 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
             }
 
             ioService.write( nioPath,
-                             drl,
+                             GuidedDTXMLPersistence.getInstance().marshal( content ),
                              makeCommentedOption( comment ) );
 
             return newPath;
@@ -149,11 +150,12 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
     }
 
     @Override
-    public String load( final Path path ) {
+    public GuidedDecisionTable52 load( final Path path ) {
         try {
+        	System.out.println("**alternative load .gdst");
             final String content = ioService.readAllString( Paths.convert( path ) );
 
-            return content;
+            return GuidedDTXMLPersistence.getInstance().unmarshal( content );
 
         } catch ( Exception e ) {
             throw ExceptionUtilities.handleException( e );
@@ -161,22 +163,32 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
     }
 
     @Override
-    public DrlModelContent loadContent( final Path path ) {
+    public GuidedDecisionTableEditorContent loadContent( final Path path ) {
         try {
-            final String drl = load( path );
+            final GuidedDecisionTable52 model = load( path );
             final PackageDataModelOracle oracle = dataModelService.getDataModel( path );
-            final String[] fullyQualifiedClassNames = DataModelOracleUtilities.getFactTypes( oracle );
-            final List<DSLSentence> dslConditions = oracle.getPackageDslConditionSentences();
-            final List<DSLSentence> dslActions = oracle.getPackageDslActionSentences();
+            final PackageDataModelOracleBaselinePayload dataModel = new PackageDataModelOracleBaselinePayload();
+
+            //Get FQCN's used by model
+            final GuidedDecisionTableModelVisitor visitor = new GuidedDecisionTableModelVisitor( model );
+            final Set<String> consumedFQCNs = visitor.getConsumedModelClasses();
+
+            //Get FQCN's used by Globals
+            consumedFQCNs.addAll( oracle.getPackageGlobals().values() );
+
+            DataModelOracleUtilities.populateDataModel( oracle,
+                                                        dataModel,
+                                                        consumedFQCNs );
+
+            final Set<PortableWorkDefinition> workItemDefinitions = workItemsService.loadWorkItemDefinitions( path );
 
             //Signal opening to interested parties
             resourceOpenedEvent.fire( new ResourceOpenedEvent( path,
-                    sessionInfo ) );
+                                                               sessionInfo ) );
 
-            return new DrlModelContent( drl,
-                                        Arrays.asList( fullyQualifiedClassNames ),
-                                        dslConditions,
-                                        dslActions );
+            return new GuidedDecisionTableEditorContent( model,
+                                                         workItemDefinitions,
+                                                         dataModel );
 
         } catch ( Exception e ) {
             throw ExceptionUtilities.handleException( e );
@@ -184,13 +196,17 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
     }
 
     @Override
-    public List<String> loadClassFields( final Path path,
-                                         final String fullyQualifiedClassName ) {
+    public PackageDataModelOracleBaselinePayload loadDataModel( final Path path ) {
         try {
+        	System.out.println("**alternative loadDataModel .gdst");
             final PackageDataModelOracle oracle = dataModelService.getDataModel( path );
-            final String[] fieldNames = DataModelOracleUtilities.getFieldNames( oracle,
-                                                                                fullyQualifiedClassName );
-            return Arrays.asList( fieldNames );
+            final PackageDataModelOracleBaselinePayload dataModel = new PackageDataModelOracleBaselinePayload();
+            //There are no classes to pre-load into the DMO when requesting a new Data Model only
+            DataModelOracleUtilities.populateDataModel( oracle,
+                                                        dataModel,
+                                                        new HashSet<String>() );
+
+            return dataModel;
 
         } catch ( Exception e ) {
             throw ExceptionUtilities.handleException( e );
@@ -199,23 +215,23 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
 
     @Override
     public Path save( final Path resource,
-                      final String content,
+                      final GuidedDecisionTable52 model,
                       final Metadata metadata,
                       final String comment ) {
         try {
-            final String drl = assertPackageName( content,
-                                                  resource );
-            System.out.println("**///Hernsys preSave .drl");
+        	System.out.println("**alternative save .gdst");
+            final Package pkg = projectService.resolvePackage( resource );
+            final String packageName = ( pkg == null ? null : pkg.getPackageName() );
+            model.setPackageName( packageName );
+
             ioService.write( Paths.convert( resource ),
-                             drl,
+                             GuidedDTXMLPersistence.getInstance().marshal( model ),
                              metadataService.setUpAttributes( resource,
                                                               metadata ),
                              makeCommentedOption( comment ) );
-            System.out.println("**///Hernsys posSave .drl");
             return resource;
 
         } catch ( Exception e ) {
-        	System.out.println("**///Hernsys onErrorSave .drl");
             throw ExceptionUtilities.handleException( e );
         }
     }
@@ -224,6 +240,7 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
     public void delete( final Path path,
                         final String comment ) {
         try {
+        	System.out.println("**alternative delete .gdst");
             deleteService.delete( path,
                                   comment );
 
@@ -237,6 +254,7 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
                         final String newName,
                         final String comment ) {
         try {
+        	System.out.println("**alternative rename .gdst");
             return renameService.rename( path,
                                          newName,
                                          comment );
@@ -251,6 +269,7 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
                       final String newName,
                       final String comment ) {
         try {
+        	System.out.println("**alternative copy .gdst");
             return copyService.copy( path,
                                      newName,
                                      comment );
@@ -261,11 +280,26 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
     }
 
     @Override
-    public List<ValidationMessage> validate( final Path path,
-                                             final String content ) {
+    public String toSource( final Path path,
+                            final GuidedDecisionTable52 model ) {
         try {
+            return sourceServices.getServiceFor( Paths.convert( path ) ).getSource( Paths.convert( path ),
+                                                                                    model );
+
+        } catch ( Exception e ) {
+            throw ExceptionUtilities.handleException( e );
+        }
+    }
+
+    @Override
+    public List<ValidationMessage> validate( final Path path,
+                                             final GuidedDecisionTable52 content ) {
+        try {
+        	System.out.println("**alternative validate .gdst");
             return genericValidator.validate( path,
-                                              new ByteArrayInputStream( content.getBytes( Charsets.UTF_8 ) ),
+                                              new ByteArrayInputStream(
+                                                      GuidedDTXMLPersistence.getInstance().marshal( content ).getBytes( Charsets.UTF_8 )
+                                              ),
                                               FILTER_JAVA,
                                               FILTER_DRL,
                                               FILTER_DSLR,
@@ -273,41 +307,6 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
                                               FILTER_RDRL,
                                               FILTER_RDSLR,
                                               FILTER_GLOBAL );
-
-        } catch ( Exception e ) {
-            throw ExceptionUtilities.handleException( e );
-        }
-    }
-
-    //Check if the DRL contains a Package declaration, appending one if it does not exist
-    @Override
-    public String assertPackageName( final String drl,
-                                     final Path resource ) {
-        try {
-            final String existingPackageName = PackageNameParser.parsePackageName( drl );
-            if ( !"".equals( existingPackageName ) ) {
-                return drl;
-            }
-
-            final Package pkg = projectService.resolvePackage( resource );
-            final String requiredPackageName = ( pkg == null ? null : pkg.getPackageName() );
-            final HasPackageName mockHasPackageName = new HasPackageName() {
-
-                @Override
-                public String getPackageName() {
-                    return requiredPackageName;
-                }
-
-                @Override
-                public void setPackageName( final String packageName ) {
-                    //Nothing to do here
-                }
-            };
-            final StringBuilder sb = new StringBuilder();
-            PackageNameWriter.write( sb,
-                                     mockHasPackageName );
-            sb.append( drl );
-            return sb.toString();
 
         } catch ( Exception e ) {
             throw ExceptionUtilities.handleException( e );
@@ -324,4 +323,5 @@ public class DRLTextEditorServiceImpl implements DRLTextEditorService {
                                                         when );
         return co;
     }
+
 }

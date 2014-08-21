@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package org.drools.workbench.screens.dsltext.backend.server;
+package org.drools.workbench.screens.enums.backend.server;
 
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
-import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import org.drools.compiler.lang.dsl.DSLMappingParseException;
-import org.drools.compiler.lang.dsl.DSLTokenizedMappingFile;
-import org.drools.workbench.screens.dsltext.service.DSLTextEditorService;
-import org.drools.workbench.screens.dsltext.type.DSLResourceTypeDefinition;
+import org.drools.workbench.screens.enums.model.EnumModel;
+import org.drools.workbench.screens.enums.model.EnumModelContent;
+import org.drools.workbench.screens.enums.service.EnumService;
+import org.drools.workbench.screens.enums.type.EnumResourceTypeDefinition;
 import org.guvnor.common.services.backend.exceptions.ExceptionUtilities;
+import org.guvnor.common.services.builder.LRUBuilderCache;
 import org.guvnor.common.services.project.builder.events.InvalidateDMOPackageCacheEvent;
+import org.guvnor.common.services.project.model.Project;
+import org.guvnor.common.services.project.service.ProjectService;
 import org.guvnor.common.services.shared.file.CopyService;
 import org.guvnor.common.services.shared.file.DeleteService;
 import org.guvnor.common.services.shared.file.RenameService;
@@ -41,6 +42,9 @@ import org.guvnor.common.services.shared.metadata.MetadataService;
 import org.guvnor.common.services.shared.metadata.model.Metadata;
 import org.guvnor.common.services.shared.validation.model.ValidationMessage;
 import org.jboss.errai.bus.server.annotations.Service;
+import org.kie.api.builder.KieModule;
+import org.kie.scanner.KieModuleMetaData;
+import org.kie.workbench.common.services.datamodel.backend.server.builder.util.DataEnumLoader;
 import org.uberfire.backend.server.util.Paths;
 import org.uberfire.backend.vfs.Path;
 import org.uberfire.io.IOService;
@@ -50,10 +54,12 @@ import org.uberfire.rpc.SessionInfo;
 import org.uberfire.security.Identity;
 import org.uberfire.workbench.events.ResourceOpenedEvent;
 
+/**
+ *
+ */
 @Service
 @ApplicationScoped
-@Alternative
-public class DSLTextEditorServiceImpl implements DSLTextEditorService {
+public class P3EnumServiceImpl implements EnumService {
 
     @Inject
     @Named("ioStrategy")
@@ -84,7 +90,13 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
     private SessionInfo sessionInfo;
 
     @Inject
-    private DSLResourceTypeDefinition resourceTypeDefinition;
+    private EnumResourceTypeDefinition resourceTypeDefinition;
+
+    @Inject
+    private ProjectService projectService;
+
+    @Inject
+    private LRUBuilderCache builderCache;
 
     @Override
     public Path create( final Path context,
@@ -92,6 +104,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
                         final String content,
                         final String comment ) {
         try {
+        	System.out.println("**alternative create .enumeration");
             final org.uberfire.java.nio.file.Path nioPath = Paths.convert( context ).resolve( fileName );
             final Path newPath = Paths.convert( nioPath );
 
@@ -113,13 +126,25 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
     @Override
     public String load( final Path path ) {
         try {
+        	System.out.println("**alternative load .enumeration");
             final String content = ioService.readAllString( Paths.convert( path ) );
+
+            return content;
+
+        } catch ( Exception e ) {
+            throw ExceptionUtilities.handleException( e );
+        }
+    }
+
+    @Override
+    public EnumModelContent loadContent( final Path path ) {
+        try {
 
             //Signal opening to interested parties
             resourceOpenedEvent.fire( new ResourceOpenedEvent( path,
-                                                               sessionInfo ) );
+                    sessionInfo ) );
 
-            return content;
+            return new EnumModelContent( new EnumModel( load( path ) ) );
 
         } catch ( Exception e ) {
             throw ExceptionUtilities.handleException( e );
@@ -132,20 +157,19 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
                       final Metadata metadata,
                       final String comment ) {
         try {
-        	System.out.println("**Hernsys preSave .dsl");
+        	System.out.println("**alternative save .enumeration");
             ioService.write( Paths.convert( resource ),
                              content,
                              metadataService.setUpAttributes( resource,
                                                               metadata ),
                              makeCommentedOption( comment ) );
 
-            //Invalidate Package-level DMO cache as a DSL has been altered
+            //Invalidate Package-level DMO cache as Enums have changed.
             invalidateDMOPackageCache.fire( new InvalidateDMOPackageCacheEvent( resource ) );
-            System.out.println("**Hernsys posSave .dsl");
+
             return resource;
 
         } catch ( Exception e ) {
-        	System.out.println("**Hernsys onErrorSave .dsl");
             throw ExceptionUtilities.handleException( e );
         }
     }
@@ -154,6 +178,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
     public void delete( final Path path,
                         final String comment ) {
         try {
+        	System.out.println("**alternative delete .enumeration");
             deleteService.delete( path,
                                   comment );
 
@@ -167,6 +192,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
                         final String newName,
                         final String comment ) {
         try {
+        	System.out.println("**alternative rename .enumeration");
             return renameService.rename( path,
                                          newName,
                                          comment );
@@ -181,6 +207,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
                       final String newName,
                       final String comment ) {
         try {
+        	System.out.println("**alternative copy .enumeration");
             return copyService.copy( path,
                                      newName,
                                      comment );
@@ -198,6 +225,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
     @Override
     public List<ValidationMessage> validate( final Path path ) {
         try {
+        	System.out.println("**alternative validate .enumeration");
             final String content = ioService.readAllString( Paths.convert( path ) );
             return validate( path,
                              content );
@@ -210,58 +238,42 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
     @Override
     public List<ValidationMessage> validate( final Path path,
                                              final String content ) {
-        return doValidation( content );
+        return doValidation( path,
+                             content );
     }
 
-    private List<ValidationMessage> doValidation( final String content ) {
-        final List<ValidationMessage> validationMessages = new ArrayList<ValidationMessage>();
-        final DSLTokenizedMappingFile dslLoader = new DSLTokenizedMappingFile();
+    private List<ValidationMessage> doValidation( final Path path,
+                                                  final String content ) {
         try {
-            if ( !dslLoader.parseAndLoad( new StringReader( content ) ) ) {
-                validationMessages.addAll( makeValidationMessages( dslLoader ) );
-            }
-            return validationMessages;
+            final Project project = projectService.resolveProject( path );
+            final KieModule module = builderCache.assertBuilder( project ).getKieModuleIgnoringErrors();
+            final ClassLoader classLoader = KieModuleMetaData.Factory.newKieModuleMetaData( module ).getClassLoader();
+            final DataEnumLoader loader = new DataEnumLoader( content,
+                                                              classLoader );
+            if ( !loader.hasErrors() ) {
+                return Collections.emptyList();
+            } else {
+                final List<ValidationMessage> validationMessages = new ArrayList<ValidationMessage>();
+                final List<String> loaderErrors = loader.getErrors();
 
-        } catch ( IOException e ) {
+                for ( final String message : loaderErrors ) {
+                    validationMessages.add( makeValidationMessages( path,
+                                                                    message ) );
+                }
+                return validationMessages;
+            }
+
+        } catch ( Exception e ) {
             throw ExceptionUtilities.handleException( e );
         }
     }
 
-    private List<ValidationMessage> makeValidationMessages( final DSLTokenizedMappingFile dslLoader ) {
-        final List<ValidationMessage> messages = new ArrayList<ValidationMessage>();
-        for ( final Object o : dslLoader.getErrors() ) {
-            if ( o instanceof DSLMappingParseException ) {
-                final DSLMappingParseException dslMappingParseException = (DSLMappingParseException) o;
-                messages.add( makeNewValidationMessage( dslMappingParseException ) );
-            } else if ( o instanceof Exception ) {
-                final Exception e = (Exception) o;
-                messages.add( makeNewValidationMessage( e ) );
-            } else {
-                messages.add( makeNewValidationMessage( o ) );
-            }
-        }
-        return messages;
-    }
-
-    private ValidationMessage makeNewValidationMessage( final DSLMappingParseException e ) {
+    private ValidationMessage makeValidationMessages( final Path path,
+                                                      final String message ) {
         final ValidationMessage msg = new ValidationMessage();
+        msg.setPath( path );
         msg.setLevel( ValidationMessage.Level.ERROR );
-        msg.setLine( e.getLine() );
-        msg.setText( e.getMessage() );
-        return msg;
-    }
-
-    private ValidationMessage makeNewValidationMessage( final Exception e ) {
-        final ValidationMessage msg = new ValidationMessage();
-        msg.setLevel( ValidationMessage.Level.ERROR );
-        msg.setText( "Exception " + e.getClass() + " " + e.getMessage() + " " + e.getCause() );
-        return msg;
-    }
-
-    private ValidationMessage makeNewValidationMessage( final Object o ) {
-        final ValidationMessage msg = new ValidationMessage();
-        msg.setLevel( ValidationMessage.Level.ERROR );
-        msg.setText( "Uncategorized error " + o );
+        msg.setText( message );
         return msg;
     }
 
@@ -275,4 +287,5 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
                                                         when );
         return co;
     }
+
 }

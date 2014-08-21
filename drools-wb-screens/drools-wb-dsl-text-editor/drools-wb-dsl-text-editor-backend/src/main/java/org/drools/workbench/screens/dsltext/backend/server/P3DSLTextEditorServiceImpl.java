@@ -24,7 +24,6 @@ import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
-import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -41,10 +40,10 @@ import org.guvnor.common.services.shared.metadata.MetadataService;
 import org.guvnor.common.services.shared.metadata.model.Metadata;
 import org.guvnor.common.services.shared.validation.model.ValidationMessage;
 import org.jboss.errai.bus.server.annotations.Service;
-import org.uberfire.backend.server.util.Paths;
-import org.uberfire.backend.vfs.Path;
 import org.uberfire.io.IOService;
 import org.uberfire.java.nio.base.options.CommentedOption;
+import org.uberfire.backend.server.util.Paths;
+import org.uberfire.backend.vfs.Path;
 import org.uberfire.java.nio.file.FileAlreadyExistsException;
 import org.uberfire.rpc.SessionInfo;
 import org.uberfire.security.Identity;
@@ -52,8 +51,7 @@ import org.uberfire.workbench.events.ResourceOpenedEvent;
 
 @Service
 @ApplicationScoped
-@Alternative
-public class DSLTextEditorServiceImpl implements DSLTextEditorService {
+public class P3DSLTextEditorServiceImpl implements DSLTextEditorService {
 
     @Inject
     @Named("ioStrategy")
@@ -92,6 +90,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
                         final String content,
                         final String comment ) {
         try {
+        	System.out.println("**alternative create .dsl");
             final org.uberfire.java.nio.file.Path nioPath = Paths.convert( context ).resolve( fileName );
             final Path newPath = Paths.convert( nioPath );
 
@@ -113,6 +112,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
     @Override
     public String load( final Path path ) {
         try {
+        	System.out.println("**alternative load .dsl");
             final String content = ioService.readAllString( Paths.convert( path ) );
 
             //Signal opening to interested parties
@@ -132,7 +132,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
                       final Metadata metadata,
                       final String comment ) {
         try {
-        	System.out.println("**Hernsys preSave .dsl");
+        	System.out.println("**alternative save .dsl");
             ioService.write( Paths.convert( resource ),
                              content,
                              metadataService.setUpAttributes( resource,
@@ -141,11 +141,9 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
 
             //Invalidate Package-level DMO cache as a DSL has been altered
             invalidateDMOPackageCache.fire( new InvalidateDMOPackageCacheEvent( resource ) );
-            System.out.println("**Hernsys posSave .dsl");
             return resource;
 
         } catch ( Exception e ) {
-        	System.out.println("**Hernsys onErrorSave .dsl");
             throw ExceptionUtilities.handleException( e );
         }
     }
@@ -154,6 +152,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
     public void delete( final Path path,
                         final String comment ) {
         try {
+        	System.out.println("**alternative delete .dsl");
             deleteService.delete( path,
                                   comment );
 
@@ -167,6 +166,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
                         final String newName,
                         final String comment ) {
         try {
+        	System.out.println("**alternative rename .dsl");
             return renameService.rename( path,
                                          newName,
                                          comment );
@@ -181,6 +181,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
                       final String newName,
                       final String comment ) {
         try {
+        	System.out.println("**alternative copy .dsl");
             return copyService.copy( path,
                                      newName,
                                      comment );
@@ -198,6 +199,7 @@ public class DSLTextEditorServiceImpl implements DSLTextEditorService {
     @Override
     public List<ValidationMessage> validate( final Path path ) {
         try {
+        	System.out.println("**alternative validate .dsl");
             final String content = ioService.readAllString( Paths.convert( path ) );
             return validate( path,
                              content );

@@ -28,7 +28,6 @@ import java.util.Set;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
-import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -80,10 +79,9 @@ import org.uberfire.workbench.events.ResourceOpenedEvent;
 
 @Service
 @ApplicationScoped
-@Alternative
-public class WorkItemsEditorServiceImpl implements WorkItemsEditorService {
+public class P3WorkItemsEditorServiceImpl implements WorkItemsEditorService {
 
-    private static final Logger log = LoggerFactory.getLogger( WorkItemsEditorServiceImpl.class );
+    private static final Logger log = LoggerFactory.getLogger( P3WorkItemsEditorServiceImpl.class );
 
     @Inject
     @Named("ioStrategy")
@@ -158,6 +156,7 @@ public class WorkItemsEditorServiceImpl implements WorkItemsEditorService {
                         final String content,
                         final String comment ) {
         try {
+        	System.out.println("**alternative create .wid");
             //Get the template for new Work Item Definitions, stored as a configuration item
             String defaultDefinition = workItemDefinitionElements.getDefinitionElements().get( WORK_ITEMS_EDITOR_SETTINGS_DEFINITION );
             if ( defaultDefinition == null ) {
@@ -188,6 +187,7 @@ public class WorkItemsEditorServiceImpl implements WorkItemsEditorService {
     @Override
     public String load( final Path path ) {
         try {
+        	System.out.println("**alternative load .wid");
             final String content = ioService.readAllString( Paths.convert( path ) );
 
             return content;
@@ -242,6 +242,7 @@ public class WorkItemsEditorServiceImpl implements WorkItemsEditorService {
                       final Metadata metadata,
                       final String comment ) {
         try {
+        	System.out.println("**alternative save .wid");
             ioService.write( Paths.convert( resource ),
                              content,
                              metadataService.setUpAttributes( resource,
@@ -259,6 +260,7 @@ public class WorkItemsEditorServiceImpl implements WorkItemsEditorService {
     public void delete( final Path path,
                         final String comment ) {
         try {
+        	System.out.println("**alternative delete .wid");
             deleteService.delete( path,
                                   comment );
 
@@ -272,6 +274,7 @@ public class WorkItemsEditorServiceImpl implements WorkItemsEditorService {
                         final String newName,
                         final String comment ) {
         try {
+        	System.out.println("**alternative rename .wid");
             return renameService.rename( path,
                                          newName,
                                          comment );
@@ -286,6 +289,7 @@ public class WorkItemsEditorServiceImpl implements WorkItemsEditorService {
                       final String newName,
                       final String comment ) {
         try {
+        	System.out.println("**alternative copy .wid");
             return copyService.copy( path,
                                      newName,
                                      comment );

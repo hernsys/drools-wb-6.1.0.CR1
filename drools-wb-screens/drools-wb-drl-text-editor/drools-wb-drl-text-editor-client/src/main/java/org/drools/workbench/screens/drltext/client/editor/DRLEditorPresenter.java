@@ -87,6 +87,8 @@ import com.google.gwt.user.client.ui.IsWidget;
 		DRLResourceType.class, DSLRResourceType.class })
 public class DRLEditorPresenter {
 
+	
+	
 	@Inject
 	private Caller<DRLTextEditorService> drlTextEditorService;
 
@@ -404,10 +406,11 @@ public class DRLEditorPresenter {
 			@Override
 			public void execute(final String commitMessage) {
 				view.showBusyIndicator(CommonConstants.INSTANCE.Saving());
-				drlTextEditorService.call(getSaveSuccessCallback(),
-						new HasBusyIndicatorDefaultErrorCallback(view)).save(
-						path, view.getContent(), metadataWidget.getContent(),
-						commitMessage);
+				drlTextEditorService.call(getSaveSuccessCallback(), new HasBusyIndicatorDefaultErrorCallback(view)).save(
+										  path, view.getContent(), metadataWidget.getContent(), 
+										  commitMessage);
+				
+				
 			}
 		});
 		concurrentUpdateSessionInfo = null;

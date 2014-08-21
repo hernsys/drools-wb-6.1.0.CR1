@@ -20,8 +20,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
+import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -58,6 +60,7 @@ import org.uberfire.workbench.events.ResourceOpenedEvent;
  */
 @Service
 @ApplicationScoped
+@Alternative
 public class EnumServiceImpl implements EnumService {
 
     @Inject

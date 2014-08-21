@@ -19,12 +19,13 @@ package org.drools.workbench.screens.guided.rule.backend.server;
 import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.Set;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
+import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import com.google.common.base.Charsets;
 import org.drools.workbench.models.commons.backend.rule.RuleModelDRLPersistenceImpl;
 import org.drools.workbench.models.datamodel.imports.Import;
 import org.drools.workbench.models.datamodel.oracle.PackageDataModelOracle;
@@ -62,8 +63,11 @@ import org.uberfire.java.nio.file.FileAlreadyExistsException;
 import org.uberfire.rpc.SessionInfo;
 import org.uberfire.workbench.events.ResourceOpenedEvent;
 
+import com.google.common.base.Charsets;
+
 @Service
 @ApplicationScoped
+@Alternative
 public class GuidedRuleEditorServiceImpl implements GuidedRuleEditorService {
 
     //Filters to include *all* applicable resources

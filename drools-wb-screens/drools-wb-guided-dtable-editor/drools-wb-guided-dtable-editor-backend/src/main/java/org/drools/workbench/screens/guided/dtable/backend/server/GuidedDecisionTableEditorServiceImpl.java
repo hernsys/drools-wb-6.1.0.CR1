@@ -24,10 +24,9 @@ import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Event;
+import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 import javax.inject.Named;
-
-import com.google.common.base.Charsets;
 
 import org.drools.workbench.models.datamodel.oracle.PackageDataModelOracle;
 import org.drools.workbench.models.datamodel.workitems.PortableWorkDefinition;
@@ -67,8 +66,11 @@ import org.uberfire.rpc.SessionInfo;
 import org.uberfire.security.Identity;
 import org.uberfire.workbench.events.ResourceOpenedEvent;
 
+import com.google.common.base.Charsets;
+
 @Service
 @ApplicationScoped
+@Alternative
 public class GuidedDecisionTableEditorServiceImpl implements GuidedDecisionTableEditorService {
 
     //Filters to include *all* applicable resources

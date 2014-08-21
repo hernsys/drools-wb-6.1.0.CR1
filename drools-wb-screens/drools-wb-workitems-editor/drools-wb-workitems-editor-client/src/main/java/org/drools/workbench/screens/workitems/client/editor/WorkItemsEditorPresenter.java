@@ -353,7 +353,6 @@ public class WorkItemsEditorPresenter {
                                                                                                                                  view.getContent(),
                                                                                                                                  metadataWidget.getContent(),
                                                                                                                                  commitMessage );
-                                                 notification.fire( new NotificationEvent( "****Hernsys WorkItemsEditorPresenter save " ));
                                              }
                                          }
                                        );
