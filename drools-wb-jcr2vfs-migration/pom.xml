@@ -16,7 +16,7 @@
 
   <properties>
     <version.org.drools.jcrGuvnor>5.6.0.Final</version.org.drools.jcrGuvnor>
-    <version.migrate.org.jbpm.bpmn2>5.5.0.CR1</version.migrate.org.jbpm.bpmn2>
+    <version.migrate.org.jbpm.bpmn2>6.2.0.Final</version.migrate.org.jbpm.bpmn2>
     <version.org.apache.lucene.core>2.4.1</version.org.apache.lucene.core>
   </properties>
 
